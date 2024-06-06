@@ -31,7 +31,7 @@ ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=
 
 # data loading init
 if real_data:
-    dataset = 'openwebtext'
+    dataset = 'shakespeare'
     data_dir = os.path.join('data', dataset)
     train_data = np.memmap(os.path.join(data_dir, 'train.bin'), dtype=np.uint16, mode='r')
     def get_batch(split):
@@ -39,7 +39,8 @@ if real_data:
         ix = torch.randint(len(data) - block_size, (batch_size,))
         x = torch.stack([torch.from_numpy((data[i:i+block_size]).astype(np.int64)) for i in ix])
         y = torch.stack([torch.from_numpy((data[i+1:i+1+block_size]).astype(np.int64)) for i in ix])
-        x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
+        if device == 'cuda':
+            x, y = x.pin_memory().to(device, non_blocking=True), y.pin_memory().to(device, non_blocking=True)
         return x, y
 else:
     # alternatively, if fixed data is desired to not care about data loading
@@ -53,6 +54,7 @@ gptconf = GPTConfig(
     n_layer = 12, n_head = 12, n_embd = 768, # size of the model
     dropout = 0, # for determinism
     bias = bias,
+    softmax_fn = None,
 )
 model = GPT(gptconf)
 model.to(device)
@@ -96,7 +98,8 @@ if profile:
 else:
 
     # simple benchmarking
-    torch.cuda.synchronize()
+    if device_type == 'cuda':
+        torch.cuda.synchronize()
     for stage, num_steps in enumerate([10, 20]): # burnin, then benchmark
         t0 = time.time()
         X, Y = get_batch('train')
@@ -109,7 +112,8 @@ else:
             optimizer.step()
             lossf = loss.item()
             print(f"{k}/{num_steps} loss: {lossf:.4f}")
-        torch.cuda.synchronize()
+        if device_type == 'cuda':
+            torch.cuda.synchronize()
         t1 = time.time()
         dt = t1-t0
         mfu = model.estimate_mfu(batch_size * 1 * num_steps, dt)
