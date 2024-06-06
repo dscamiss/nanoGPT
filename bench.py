@@ -100,7 +100,7 @@ else:
     # simple benchmarking
     if device_type == 'cuda':
         torch.cuda.synchronize()
-    for stage, num_steps in enumerate([10, 20]): # burnin, then benchmark
+    for stage, num_steps in enumerate([10, 100]): # burnin, then benchmark
         t0 = time.time()
         X, Y = get_batch('train')
         for k in range(num_steps):
