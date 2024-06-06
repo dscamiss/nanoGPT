@@ -67,7 +67,7 @@ class CausalSelfAttention(nn.Module):
             # manual implementation of attention
             att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
             att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-            att = self.softmax_fn(att, dim=-1)
+            att = self.softmax_fn(att)
             att = self.attn_dropout(att)
             y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
         y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
@@ -117,6 +117,9 @@ class GPTConfig:
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
     softmax_fn: Callable = F.softmax
 
+def built_in_softmax(x):
+    return F.softmax(x, dim=-1)
+
 class GPT(nn.Module):
 
     def __init__(self, config):
@@ -127,7 +130,7 @@ class GPT(nn.Module):
         # softmax-like function
         if config.softmax_fn is None:
             print("Using built-in softmax")
-            self.config.softmax_fn = F.softmax
+            self.config.softmax_fn = built_in_softmax
         else:
             print(f"Using user-specified softmax \"{config.softmax_fn.__name__}\"")
             self.config.softmax_fn = config.softmax_fn
