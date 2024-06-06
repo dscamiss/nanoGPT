@@ -7,6 +7,7 @@ import numpy as np
 import time
 import torch
 from model import GPTConfig, GPT
+from softmax import Softmax
 
 # -----------------------------------------------------------------------------
 batch_size = 12
@@ -54,7 +55,7 @@ gptconf = GPTConfig(
     n_layer = 12, n_head = 12, n_embd = 768, # size of the model
     dropout = 0, # for determinism
     bias = bias,
-    softmax_fn = None,
+    softmax_fn = Softmax.apply,
 )
 model = GPT(gptconf)
 model.to(device)

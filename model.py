@@ -132,7 +132,7 @@ class GPT(nn.Module):
             print("Using built-in softmax")
             self.config.softmax_fn = built_in_softmax
         else:
-            print(f"Using user-specified softmax \"{config.softmax_fn.__name__}\"")
+            print("Using user-specified softmax")
             self.config.softmax_fn = config.softmax_fn
 
         self.transformer = nn.ModuleDict(dict(
