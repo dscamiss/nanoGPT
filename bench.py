@@ -8,6 +8,7 @@ import time
 import torch
 from model import GPTConfig, GPT
 from softmax import Softmax
+from approximate_softmax import ApproximateSoftmax
 
 # -----------------------------------------------------------------------------
 batch_size = 12
@@ -18,7 +19,7 @@ seed = 1337
 device = 'cuda' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1', etc.
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16' # 'float32' or 'bfloat16' or 'float16'
 compile = True # use PyTorch 2.0 to compile the model to be faster
-profile = False # use pytorch profiler, or just simple benchmarking?
+profile = True # use pytorch profiler, or just simple benchmarking?
 exec(open('configurator.py').read()) # overrides from command line or config file
 # -----------------------------------------------------------------------------
 
@@ -32,7 +33,7 @@ ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=
 
 # data loading init
 if real_data:
-    dataset = 'shakespeare'
+    dataset = 'openwebtext'
     data_dir = os.path.join('data', dataset)
     train_data = np.memmap(os.path.join(data_dir, 'train.bin'), dtype=np.uint16, mode='r')
     def get_batch(split):
@@ -56,6 +57,8 @@ gptconf = GPTConfig(
     dropout = 0, # for determinism
     bias = bias,
     softmax_fn = Softmax.apply,
+    # softmax_fn = ApproximateSoftmax.apply,
+    # softmax_fn = None,
 )
 model = GPT(gptconf)
 model.to(device)
@@ -70,7 +73,7 @@ if profile:
     # useful docs on pytorch profiler:
     # - tutorial https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html
     # - api https://pytorch.org/docs/stable/profiler.html#torch.profiler.profile
-    wait, warmup, active = 5, 5, 5
+    wait, warmup, active = 5, 5, 20
     num_steps = wait + warmup + active
     with torch.profiler.profile(
         activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
@@ -93,15 +96,18 @@ if profile:
             optimizer.step()
             lossf = loss.item()
             print(f"{k}/{num_steps} loss: {lossf:.4f}")
-
             prof.step() # notify the profiler at end of each step
+
+        # dump results
+        print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=-1))
+        print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=-1))
 
 else:
 
     # simple benchmarking
     if device_type == 'cuda':
         torch.cuda.synchronize()
-    for stage, num_steps in enumerate([10, 100]): # burnin, then benchmark
+    for stage, num_steps in enumerate([10, 20]): # burnin, then benchmark
         t0 = time.time()
         X, Y = get_batch('train')
         for k in range(num_steps):

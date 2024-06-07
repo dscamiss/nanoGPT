@@ -1,4 +1,4 @@
-"""Implementation of softmax map with explicit backward() method."""
+"""Implementation of softmax map."""
 
 import torch
 
@@ -18,6 +18,5 @@ class Softmax(Function):
         x_exp = torch.exp(x - maxes)
         x_exp_sum = torch.sum(x_exp, dim=-1, keepdim=True)
         y = x_exp / x_exp_sum
-        ctx.save_for_backward(y)
         return y
 
