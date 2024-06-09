@@ -9,17 +9,18 @@ import torch
 from model import GPTConfig, GPT
 from softmax import Softmax
 from approximate_softmax import ApproximateSoftmax
+from torch import autograd
 
 # -----------------------------------------------------------------------------
-batch_size = 12
+batch_size = 8
 block_size = 1024
 bias = False
-real_data = True
+real_data = False
 seed = 1337
-device = 'cuda' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1', etc.
+device = 'cpu' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1', etc.
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16' # 'float32' or 'bfloat16' or 'float16'
-compile = True # use PyTorch 2.0 to compile the model to be faster
-profile = True # use pytorch profiler, or just simple benchmarking?
+compile = False # use PyTorch 2.0 to compile the model to be faster
+profile = False # use pytorch profiler, or just simple benchmarking?
 exec(open('configurator.py').read()) # overrides from command line or config file
 # -----------------------------------------------------------------------------
 
@@ -56,9 +57,10 @@ gptconf = GPTConfig(
     n_layer = 12, n_head = 12, n_embd = 768, # size of the model
     dropout = 0, # for determinism
     bias = bias,
+    use_flash_attn = False,
     softmax_fn = Softmax.apply,
-    # softmax_fn = ApproximateSoftmax.apply,
-    # softmax_fn = None,
+    #softmax_fn = ApproximateSoftmax.apply,
+    #softmax_fn = None,
 )
 model = GPT(gptconf)
 model.to(device)

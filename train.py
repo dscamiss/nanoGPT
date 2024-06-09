@@ -27,6 +27,8 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
+from approximate_softmax import ApproximateSoftmax
+from softmax import Softmax
 from model import GPTConfig, GPT
 
 # -----------------------------------------------------------------------------
@@ -66,6 +68,8 @@ decay_lr = True # whether to decay the learning rate
 warmup_iters = 2000 # how many steps to warm up for
 lr_decay_iters = 600000 # should be ~= max_iters per Chinchilla
 min_lr = 6e-5 # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
+# flash attention
+use_flash_attn = False
 # DDP settings
 backend = 'nccl' # 'nccl', 'gloo', etc.
 # system
@@ -145,7 +149,7 @@ if os.path.exists(meta_path):
 
 # model init
 model_args = dict(n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=block_size,
-                  bias=bias, vocab_size=None, dropout=dropout) # start with model_args from command line
+                  bias=bias, vocab_size=None, dropout=dropout, use_flash_attn=use_flash_attn, softmax_fn=None) # start with model_args from command line
 if init_from == 'scratch':
     # init a new model from scratch
     print("Initializing a new model from scratch")
