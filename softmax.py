@@ -32,12 +32,12 @@ class Softmax(Function):
         #
         # action on incoming gradients:
         # e J(softmax)(x) = e diag(softmax(x)) - e softmax(x) softmax(x)^t
-        #                 = e * softmax(x) - <e', softmax(x)> softmax(x)^t,
+        #                 = e * softmax(x) - <e^t, softmax(x)> softmax(x)^t,
         # where "x * y" is the elementwise product of x and y, and <x, y> is the
         # euclidean inner product of x and y.
         #
         # note: the derivations above assume that softmax(x) is a column vector.
-        # in the implementation below, softmax(x) = y_softmax is a row vector,
+        # in the implementation below, softmax(x) = y is a row vector,
         # so there is no need for the transpose operation(s) when computing the
         # action on incoming gradients.
 
