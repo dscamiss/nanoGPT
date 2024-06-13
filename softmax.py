@@ -41,9 +41,9 @@ class Softmax(Function):
         # so there is no need for the transpose operation(s) when computing the
         # action on incoming gradients.
 
-        y, = ctx.saved_tensors
         grad_x = None
         if ctx.needs_input_grad[0]:
+            y, = ctx.saved_tensors
             elementwise_product = grad_in * y
             inner_product = torch.sum(elementwise_product, dim=-1, keepdim=True)
             grad_x = elementwise_product - inner_product * y

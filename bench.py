@@ -9,17 +9,18 @@ import torch
 from model import GPTConfig, GPT
 from softmax import Softmax
 from approximate_softmax import ApproximateSoftmax
+from rectified_softmax import RectifiedSoftmax
 from torch import autograd
 
 # -----------------------------------------------------------------------------
-batch_size = 8
+batch_size = 4
 block_size = 1024
 bias = False
-real_data = False
+real_data = True
 seed = 1337
-device = 'cpu' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1', etc.
+device = 'cuda' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1', etc.
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16' # 'float32' or 'bfloat16' or 'float16'
-compile = False # use PyTorch 2.0 to compile the model to be faster
+compile = True # use PyTorch 2.0 to compile the model to be faster
 profile = False # use pytorch profiler, or just simple benchmarking?
 exec(open('configurator.py').read()) # overrides from command line or config file
 # -----------------------------------------------------------------------------
@@ -58,7 +59,8 @@ gptconf = GPTConfig(
     dropout = 0, # for determinism
     bias = bias,
     use_flash_attn = False,
-    softmax_fn = Softmax.apply,
+    softmax_fn = RectifiedSoftmax(),
+    #softmax_fn = Softmax.apply,
     #softmax_fn = ApproximateSoftmax.apply,
     #softmax_fn = None,
 )
@@ -109,7 +111,7 @@ else:
     # simple benchmarking
     if device_type == 'cuda':
         torch.cuda.synchronize()
-    for stage, num_steps in enumerate([10, 20]): # burnin, then benchmark
+    for stage, num_steps in enumerate([10, 50]): # burnin, then benchmark
         t0 = time.time()
         X, Y = get_batch('train')
         for k in range(num_steps):
