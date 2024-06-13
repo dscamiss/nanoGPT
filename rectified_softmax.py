@@ -1,8 +1,8 @@
 """Implementation of rectified-softmax map."""
 
 import torch
-
 from torch import nn
+
 from profile_forward_backward import profile_forward_backward
 
 # pylint: disable=W0221
@@ -51,7 +51,7 @@ class FirstOrderSoftmaxApprox(torch.autograd.Function):
 def main():
     """Test FirstOrderSoftmaxApproximation class."""
 
-    first_order = FirstOrderSoftmaxApprox.apply
+    first_order_softmax_approx = FirstOrderSoftmaxApprox.apply
     grad_check_flag = True
     profile_flag = False
 
@@ -65,19 +65,21 @@ def main():
         ]
     ).float()
     print(f"x = {x}")
-    print(f"y = {first_order(x)}")
+    print(f"y = {first_order_softmax_approx(x)}")
 
     # Gradient check
     if grad_check_flag:
         x = torch.randn((10, 30), dtype=torch.double, requires_grad=True)
-        res = torch.autograd.gradcheck(first_order, x, eps=1e-6, atol=1e-6)
+        res = torch.autograd.gradcheck(
+            first_order_softmax_approx, x, eps=1e-6, atol=1e-6
+        )
         assert res, "Failed gradient check for first_order_softmax_approx()"
         print("Passed gradient check for first_order_softmax_approx()")
 
     # Code profile
     if profile_flag:
         x = torch.randn((10, 30), dtype=torch.double, requires_grad=True)
-        profile_forward_backward(first_order, x)
+        profile_forward_backward(first_order_softmax_approx, x)
 
 
 if __name__ == "__main__":
