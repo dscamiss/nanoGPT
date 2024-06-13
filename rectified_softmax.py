@@ -1,14 +1,15 @@
 """Implementation of rectified-softmax map."""
 
 import torch
-import torch.nn as nn
 
+from torch import nn
 from profile_forward_backward import profile_forward_backward
 
 # pylint: disable=W0221
 # pylint: disable=W0223
 
 # TODO: Timing experiments, masking adjustments
+
 
 class RectifiedSoftmax(nn.Module):
     """Implementation of rectified-softmax map."""
@@ -22,6 +23,7 @@ class RectifiedSoftmax(nn.Module):
         self.first_order_softmax_approx = FirstOrderSoftmaxApprox.apply
 
     def forward(self, x):
+        """Forward pass."""
         y = self.first_order_softmax_approx(x)
         y = self.leaky_relu(y)
         if self.rectify_high:
@@ -49,31 +51,33 @@ class FirstOrderSoftmaxApprox(torch.autograd.Function):
 def main():
     """Test FirstOrderSoftmaxApproximation class."""
 
-    first_order_softmax_approx = FirstOrderSoftmaxApprox.apply
+    first_order = FirstOrderSoftmaxApprox.apply
     grad_check_flag = True
     profile_flag = False
 
     # Basic output check
-    x = torch.tensor([
-        [1, 2, 3],
-        [5, 1, 3],
-        [-8, -1, 0],
-        [ 0.4823, 1.1401, -0.9511],
-    ]).float()
+    x = torch.tensor(
+        [
+            [1, 2, 3],
+            [5, 1, 3],
+            [-8, -1, 0],
+            [0.4823, 1.1401, -0.9511],
+        ]
+    ).float()
     print(f"x = {x}")
-    print(f"y = {first_order_softmax_approx(x)}")
+    print(f"y = {first_order(x)}")
 
     # Gradient check
     if grad_check_flag:
         x = torch.randn((10, 30), dtype=torch.double, requires_grad=True)
-        res = torch.autograd.gradcheck(first_order_softmax_approx, x, eps=1e-6, atol=1e-6)  # type: ignore
+        res = torch.autograd.gradcheck(first_order, x, eps=1e-6, atol=1e-6)
         assert res, "Failed gradient check for first_order_softmax_approx()"
         print("Passed gradient check for first_order_softmax_approx()")
 
     # Code profile
     if profile_flag:
         x = torch.randn((10, 30), dtype=torch.double, requires_grad=True)
-        profile_forward_backward(first_order_softmax_approx, x)
+        profile_forward_backward(first_order, x)
 
 
 if __name__ == "__main__":
